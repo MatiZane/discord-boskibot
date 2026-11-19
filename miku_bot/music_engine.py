@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import pathlib
+import platform
 import re
+import shlex
 from collections import deque
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
+import discord
 import yt_dlp
 
 log = logging.getLogger(__name__)
@@ -49,6 +53,30 @@ class Track:
     uploader: str | None = None
     thumbnail: str | None = None
     stream_url: str | None = None
+    user_agent: str | None = None
+
+
+def ensure_opus_loaded() -> bool:
+    """Explicitly load bundled libopus DLL from discord.py on Windows when not yet loaded."""
+    if discord.opus.is_loaded():
+        return True
+    bin_dir = pathlib.Path(discord.__file__).parent / "bin"
+    arch = "x64" if platform.machine().endswith("64") or platform.architecture()[0] == "64bit" else "x86"
+    candidates = [
+        bin_dir / f"libopus-0.{arch}.dll",
+        bin_dir / "libopus-0.x64.dll",
+        bin_dir / "libopus-0.x86.dll",
+    ]
+    for path in candidates:
+        if path.is_file():
+            try:
+                discord.opus.load_opus(str(path))
+                if discord.opus.is_loaded():
+                    log.info("Loaded Opus library: %s", path.name)
+                    return True
+            except Exception as exc:
+                log.warning("Failed to load Opus from %s: %s", path, exc)
+    return discord.opus.is_loaded()
 
 
 def clamp_speed(value: float) -> float:
@@ -90,9 +118,11 @@ def normalize_query(raw: str) -> str:
     return f"ytsearch1:{cleaned}"
 
 
-def build_ffmpeg_options(speed: float = DEFAULT_SPEED) -> tuple[str, str]:
+def build_ffmpeg_options(speed: float = DEFAULT_SPEED, user_agent: str | None = None) -> tuple[str, str]:
     """Build reconnect-safe FFmpeg before_options and audio filter options (normal pitch)."""
     before = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+    if user_agent and user_agent.strip():
+        before += f" -user_agent {shlex.quote(user_agent.strip())}"
     safe = clamp_speed(speed)
     if abs(safe - DEFAULT_SPEED) < 0.005:
         return before, "-vn"
@@ -120,6 +150,9 @@ def _entry_to_track(entry: dict, requester: str) -> Track | None:
     uploader = str(entry.get("uploader") or entry.get("channel") or "").strip() or None
     thumbnail = str(entry.get("thumbnail") or "").strip() or None
 
+    headers = entry.get("http_headers") if isinstance(entry.get("http_headers"), dict) else {}
+    user_agent = str(headers.get("User-Agent") or "").strip() or None
+
     return Track(
         title=title,
         webpage_url=webpage_url,
@@ -128,6 +161,7 @@ def _entry_to_track(entry: dict, requester: str) -> Track | None:
         uploader=uploader,
         thumbnail=thumbnail,
         stream_url=stream_url,
+        user_agent=user_agent,
     )
 
 
@@ -145,6 +179,8 @@ def _extract_sync(query: str, requester: str) -> tuple[list[Track], str | None]:
             raw_entries = raw_entries[:1]
         tracks = [t for e in raw_entries if (t := _entry_to_track(e, requester)) is not None]
         if not tracks:
+            if is_search:
+                raise ValueError("Wyszukiwanie YouTube po samej nazwie nie zwróciło wyników — wklej bezpośredni link z YouTube.")
             raise ValueError("Nie znalazłam żadnego dostępnego utworu.")
         playlist_title = None if is_search else (str(info.get("title") or "").strip() or None)
         return tracks, playlist_title
@@ -163,6 +199,8 @@ def _resolve_stream_sync(track: Track) -> Track:
 
     duration_raw = info.get("duration")
     duration = int(duration_raw) if isinstance(duration_raw, (int, float)) and duration_raw > 0 else track.duration
+    headers = info.get("http_headers") if isinstance(info.get("http_headers"), dict) else {}
+    user_agent = str(headers.get("User-Agent") or track.user_agent or "").strip() or None
     return Track(
         title=str(info.get("title") or track.title).strip(),
         webpage_url=str(info.get("webpage_url") or track.webpage_url),
@@ -171,6 +209,7 @@ def _resolve_stream_sync(track: Track) -> Track:
         uploader=str(info.get("uploader") or info.get("channel") or track.uploader or "").strip() or None,
         thumbnail=str(info.get("thumbnail") or track.thumbnail or "").strip() or None,
         stream_url=str(info["url"]),
+        user_agent=user_agent,
     )
 
 

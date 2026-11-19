@@ -15,6 +15,7 @@ from ..music_engine import (
     Track,
     build_ffmpeg_options,
     clamp_speed,
+    ensure_opus_loaded,
     extract_tracks,
     format_duration,
     format_speed,
@@ -115,10 +116,32 @@ class MusicCog(commands.Cog):
         target_channel = ctx.author.voice.channel
         vc = ctx.guild.voice_client
         if vc is None:
-            return await target_channel.connect(self_deaf=True)
+            vc = await target_channel.connect(self_deaf=False)
+            await self._wait_for_voice_ready(vc)
+            return vc
         if vc.channel != target_channel:
             await vc.move_to(target_channel)
+            await self._wait_for_voice_ready(vc)
         return vc  # type: ignore[return-value]
+
+    async def _wait_for_voice_ready(self, vc: discord.VoiceProtocol) -> None:
+        """Wait briefly for Discord DAVE E2EE voice session handshake before streaming audio."""
+        conn = getattr(vc, "_connection", None)
+        if conn is None:
+            return
+        for _ in range(25):
+            dave_ver = getattr(conn, "dave_protocol_version", 0)
+            can_enc = getattr(conn, "can_encrypt", False)
+            if dave_ver == 0 or can_enc:
+                break
+            await asyncio.sleep(0.1)
+        log.info(
+            "Voice ready: connected=%s dave_ver=%s can_encrypt=%s opus_loaded=%s",
+            vc.is_connected(),
+            getattr(conn, "dave_protocol_version", 0),
+            getattr(conn, "can_encrypt", False),
+            discord.opus.is_loaded(),
+        )
 
     def _build_now_playing_embed(self, track: Track, state: GuildMusicState) -> discord.Embed:
         embed = discord.Embed(
@@ -178,15 +201,19 @@ class MusicCog(commands.Cog):
 
             state.cancel_idle_timer()
             try:
+                if not ensure_opus_loaded():
+                    raise RuntimeError("Nie udało się załadować biblioteki libopus.")
                 resolved = await resolve_stream(next_item)
                 state.current = resolved
-                before_opts, ff_opts = build_ffmpeg_options(state.speed)
-                source = discord.FFmpegOpusAudio(
+                before_opts, ff_opts = build_ffmpeg_options(state.speed, user_agent=resolved.user_agent)
+                pcm_source = discord.FFmpegPCMAudio(
                     resolved.stream_url,
                     executable=self.bot.config.ffmpeg_executable,  # type: ignore[attr-defined]
                     before_options=before_opts,
                     options=ff_opts,
                 )
+                source = discord.PCMVolumeTransformer(pcm_source, volume=0.85)
+                await self._wait_for_voice_ready(vc)
             except Exception as exc:
                 log.warning("Failed to play track %s: %s", next_item.title, exc)
                 if state.text_channel_id:

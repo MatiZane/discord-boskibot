@@ -7,6 +7,7 @@ from discord.ext import commands
 
 from .ai_service import MikuAIService
 from .config import BotConfig
+from .music_engine import ensure_opus_loaded
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ class MikuBot(commands.Bot):
         )
 
     async def setup_hook(self) -> None:
+        ensure_opus_loaded()
         for ext in EXTENSIONS:
             await self.load_extension(ext)
             log.info("Loaded extension: %s", ext)

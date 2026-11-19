@@ -35,7 +35,8 @@ def test_speed_clamping_formatting_and_ffmpeg_filters() -> None:
     assert "-reconnect 1" in before_1
     assert opts_1 == "-vn"
 
-    _, opts_fast = build_ffmpeg_options(1.5)
+    before_ua, opts_fast = build_ffmpeg_options(1.5, user_agent="Mozilla/5.0 Test")
+    assert "-user_agent" in before_ua
     assert opts_fast == "-vn -af atempo=1.50"
 
 
