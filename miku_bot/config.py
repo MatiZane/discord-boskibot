@@ -14,7 +14,7 @@ class BotConfig:
     gemini_api_key: str
     gemini_model: str
     command_prefix: str
-    guild_id: int | None
+    guild_ids: tuple[int, ...]
     ship_emoji_high: str
     ship_emoji_mid: str
     ship_emoji_low: str
@@ -50,13 +50,19 @@ def resolve_ffmpeg(configured: str = "") -> str:
         return "ffmpeg"
 
 
-def _parse_optional_int(raw: str | None) -> int | None:
+def _parse_int_list(raw: str | None) -> tuple[int, ...]:
     if not raw or not raw.strip():
-        return None
-    try:
-        return int(raw.strip())
-    except ValueError:
-        return None
+        return ()
+    result: list[int] = []
+    for part in raw.split(","):
+        cleaned = part.strip()
+        if not cleaned:
+            continue
+        try:
+            result.append(int(cleaned))
+        except ValueError:
+            continue
+    return tuple(dict.fromkeys(result))
 
 
 def _parse_float(raw: str | None, default: float, minimum: float = 0.0) -> float:
@@ -93,7 +99,7 @@ def load_config(env_path: str | Path | None = None) -> BotConfig:
         gemini_api_key=gemini_api_key,
         gemini_model=gemini_model,
         command_prefix=command_prefix,
-        guild_id=_parse_optional_int(os.getenv("GUILD_ID")),
+        guild_ids=_parse_int_list(os.getenv("GUILD_ID")),
         ship_emoji_high=os.getenv("SHIP_EMOJI_HIGH", "").strip(),
         ship_emoji_mid=os.getenv("SHIP_EMOJI_MID", "").strip(),
         ship_emoji_low=os.getenv("SHIP_EMOJI_LOW", "").strip(),

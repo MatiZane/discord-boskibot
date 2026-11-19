@@ -42,11 +42,12 @@ class MikuBot(commands.Bot):
             await self.load_extension(ext)
             log.info("Loaded extension: %s", ext)
 
-        if self.config.guild_id is not None:
-            guild = discord.Object(id=self.config.guild_id)
-            self.tree.copy_global_to(guild=guild)
-            synced = await self.tree.sync(guild=guild)
-            log.info("Synced %d slash commands to guild %s", len(synced), self.config.guild_id)
+        if self.config.guild_ids:
+            for gid in self.config.guild_ids:
+                guild = discord.Object(id=gid)
+                self.tree.copy_global_to(guild=guild)
+                synced = await self.tree.sync(guild=guild)
+                log.info("Synced %d slash commands to guild %s", len(synced), gid)
         else:
             synced = await self.tree.sync()
             log.info("Synced %d global slash commands", len(synced))
