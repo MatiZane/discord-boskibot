@@ -60,9 +60,34 @@ async def test_ai_tracks_history_sanitizes_mentions_and_enforces_cooldown() -> N
 @pytest.mark.asyncio
 async def test_ai_handles_rate_limit_gracefully() -> None:
     models = _FakeModels(error=RuntimeError("429 RESOURCE_EXHAUSTED"))
-    service = MikuAIService(api_key="test-key", cooldown_seconds=0.0, client=_FakeClient(models))
+    service = MikuAIService(api_key="test-key", fallback_models=(), cooldown_seconds=0.0, client=_FakeClient(models))
     ans = await service.reply(channel_id=1, user_id=1, author_name="Mati", prompt="Halo?")
     assert "limit" in ans.lower()
+
+
+@pytest.mark.asyncio
+async def test_ai_falls_back_to_backup_model_on_503() -> None:
+    class _FallbackModels:
+        def __init__(self) -> None:
+            self.models_tried: list[str] = []
+
+        async def generate_content(self, **kwargs):
+            self.models_tried.append(kwargs["model"])
+            if kwargs["model"] == "gemini-3.6-flash":
+                raise RuntimeError("503 UNAVAILABLE")
+            return SimpleNamespace(text="Udało się odpowiedzieć z modelu zapasowego.")
+
+    fake = _FallbackModels()
+    service = MikuAIService(
+        api_key="test-key",
+        model="gemini-3.6-flash",
+        fallback_models=("gemini-2.5-flash",),
+        cooldown_seconds=0.0,
+        client=_FakeClient(fake),
+    )
+    ans = await service.reply(channel_id=5, user_id=2, author_name="Mati", prompt="Test")
+    assert "zapasowego" in ans
+    assert fake.models_tried == ["gemini-3.6-flash", "gemini-2.5-flash"]
 
 
 def test_clean_prompt_strips_bot_mention() -> None:

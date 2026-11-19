@@ -33,6 +33,7 @@ class MikuBot(commands.Bot):
         self.ai_service = MikuAIService(
             api_key=config.gemini_api_key,
             model=config.gemini_model,
+            fallback_models=config.gemini_fallback_models,
             cooldown_seconds=config.ai_cooldown_seconds,
             history_turns=config.ai_history_turns,
         )

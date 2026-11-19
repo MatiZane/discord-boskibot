@@ -3,7 +3,7 @@
 Lokalny bot na prywatny serwer Discorda z klimatem **Miku Nakano**:
 - **Muzyka z YouTube** (zwykłe linki, **YouTube Shorts**, playlisty do 50 utworów, wyszukiwanie po nazwie, kolejka, pętla, przyciski sterujące oraz regulacja prędkości `0,5×–2×` z naturalną tonacją).
 - **Karty zgodności (`!s` / `/ship`)** — stały, symetryczny wynik dla pary nicków lub `@wzmianek` (kolejność osób nie zmienia wyniku) oraz generowana w locie karta graficzna PNG z avatarami i komentarzem Miku.
-- **Mini-AI Miku Nakano** — rozmowy przez darmowe **Google Gemini API** po `@wzmiankowaniu` bota, po odpowiedzi (`Reply`) na jego wiadomość lub przez `!miku` / `/miku`, z pamięcią ostatnich wiadomości na kanale i krótkim cooldownem.
+- **Mini-AI Miku Nakano** — rozmowy przez darmowe **Google Gemini API** po `@wzmiankowaniu` bota, po odpowiedzi (`Reply`) na jego wiadomość lub przez `!miku` / `/miku`, z pamięcią ostatnich wiadomości na kanale, krótkim cooldownem i automatycznym zapasem modeli Flash (`gemini-3.6-flash` → `gemini-3.5-flash` → `gemini-2.5-flash`).
 
 Wszystkie główne komendy działają **hybrydowo** — zarówno przez klasyczny prefiks `!`, jak i przez slash-komendy `/`.
 
@@ -39,7 +39,7 @@ Wszystkie główne komendy działają **hybrydowo** — zarówno przez klasyczny
 ### 2. Darmowy klucz Gemini API (Google AI Studio)
 1. Wejdź na https://aistudio.google.com/apikey i kliknij **Create API key** (na Free Tierze bez podpinania karty).
 2. Skopiuj klucz i wklej do `.env` jako `GEMINI_API_KEY`.
-3. Model ustawia zmienna `GEMINI_MODEL` (domyślnie `gemini-flash-latest`). Możesz ją zmienić na dowolny model dostępny na Twoim kluczu.
+3. Model ustawia zmienna `GEMINI_MODEL` (domyślnie `gemini-3.6-flash` z automatycznym fallbackiem `GEMINI_FALLBACK_MODELS`). Możesz ją zmienić na dowolny model dostępny na Twoim kluczu.
 
 *(Jeśli na razie zostawisz `GEMINI_API_KEY` puste, muzyka i `!s` nadal będą działać w 100% normalnie).*
 

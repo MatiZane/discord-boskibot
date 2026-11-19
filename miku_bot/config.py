@@ -13,6 +13,7 @@ class BotConfig:
     discord_token: str
     gemini_api_key: str
     gemini_model: str
+    gemini_fallback_models: tuple[str, ...]
     command_prefix: str
     guild_ids: tuple[int, ...]
     ship_emoji_high: str
@@ -91,13 +92,18 @@ def load_config(env_path: str | Path | None = None) -> BotConfig:
 
     discord_token = os.getenv("DISCORD_TOKEN", "").strip()
     gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    gemini_model = os.getenv("GEMINI_MODEL", "gemini-flash-latest").strip() or "gemini-flash-latest"
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip() or "gemini-3.6-flash"
+    fallback_raw = os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash,gemini-2.5-flash")
+    gemini_fallback_models = tuple(
+        dict.fromkeys(m.strip() for m in fallback_raw.split(",") if m.strip() and m.strip() != gemini_model)
+    )
     command_prefix = os.getenv("COMMAND_PREFIX", "!").strip() or "!"
 
     return BotConfig(
         discord_token=discord_token,
         gemini_api_key=gemini_api_key,
         gemini_model=gemini_model,
+        gemini_fallback_models=gemini_fallback_models,
         command_prefix=command_prefix,
         guild_ids=_parse_int_list(os.getenv("GUILD_ID")),
         ship_emoji_high=os.getenv("SHIP_EMOJI_HIGH", "").strip(),

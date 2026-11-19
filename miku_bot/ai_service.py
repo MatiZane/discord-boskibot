@@ -40,13 +40,15 @@ class MikuAIService:
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-flash-latest",
+        model: str = "gemini-3.6-flash",
+        fallback_models: tuple[str, ...] = ("gemini-3.5-flash", "gemini-2.5-flash"),
         cooldown_seconds: float = 4.0,
         history_turns: int = 10,
         client: object | None = None,
     ) -> None:
         self.api_key = api_key.strip()
-        self.model = model.strip() or "gemini-flash-latest"
+        self.model = model.strip() or "gemini-3.6-flash"
+        self.fallback_models = tuple(m for m in fallback_models if m and m != self.model)
         self.cooldown_seconds = max(0.0, cooldown_seconds)
         self.history_turns = max(2, history_turns)
         self._client = client if client is not None else (genai.Client(api_key=self.api_key) if self.api_key else None)
@@ -124,23 +126,38 @@ class MikuAIService:
             ]
             contents.append(types.Content(role="user", parts=[types.Part.from_text(text=user_message)]))
 
-            try:
-                response = await self._client.aio.models.generate_content(
-                    model=self.model,
-                    contents=contents,
-                    config=types.GenerateContentConfig(
-                        system_instruction=MIKU_SYSTEM_PROMPT,
-                        temperature=0.8,
-                        max_output_tokens=600,
-                    ),
-                )
-                reply_text = (getattr(response, "text", None) or "").strip()
-            except Exception as exc:
-                err_str = str(exc)
-                log.warning("Gemini API error: %s", err_str)
-                lowered = err_str.lower()
+            reply_text = ""
+            last_error: Exception | None = None
+            candidates = (self.model, *self.fallback_models)
+            for idx, model_name in enumerate(candidates):
+                try:
+                    response = await self._client.aio.models.generate_content(
+                        model=model_name,
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            system_instruction=MIKU_SYSTEM_PROMPT,
+                            temperature=0.8,
+                            max_output_tokens=600,
+                        ),
+                    )
+                    reply_text = (getattr(response, "text", None) or "").strip()
+                    last_error = None
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    err_lower = str(exc).lower()
+                    log.warning("Gemini API error on %s: %s", model_name, exc)
+                    retryable = any(code in err_lower for code in ("503", "unavailable", "429", "resource_exhausted", "404", "not found"))
+                    if retryable and idx + 1 < len(candidates):
+                        continue
+                    break
+
+            if last_error is not None:
+                lowered = str(last_error).lower()
                 if "429" in lowered or "resource_exhausted" in lowered or "quota" in lowered:
                     return "Chwilkę… wyczerpał się chwilowy limit zapytań Gemini API. Spróbuj za kilkanaście sekund. 🎧"
+                if "503" in lowered or "unavailable" in lowered:
+                    return "Serwery Gemini są chwilowo przeciążone… spróbuj napisać jeszcze raz za kilka sekund. 🎧"
                 if "api key" in lowered or "401" in lowered or "403" in lowered:
                     return "Wygląda na to, że `GEMINI_API_KEY` jest nieprawidłowy albo nie ma dostępu do tego modelu."
                 if "not found" in lowered or "404" in lowered:
