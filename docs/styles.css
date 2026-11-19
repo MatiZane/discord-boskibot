@@ -638,6 +638,13 @@ code {
   box-shadow: 0 8px 20px rgba(35, 24, 21, 0.1);
 }
 
+.char-art-wrap img.art-cutout {
+  object-fit: contain;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 8px 14px rgba(28, 60, 108, 0.16));
+}
+
 .char-num {
   position: absolute;
   top: -10px;
@@ -1074,11 +1081,11 @@ code {
 }
 
 .footer-thumb {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
-  object-fit: cover;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
   flex-shrink: 0;
+  filter: drop-shadow(0 4px 8px rgba(35, 24, 21, 0.14));
 }
 
 .footer-wide-box p {
