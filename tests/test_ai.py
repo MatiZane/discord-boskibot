@@ -93,3 +93,10 @@ async def test_ai_falls_back_to_backup_model_on_503() -> None:
 def test_clean_prompt_strips_bot_mention() -> None:
     assert MikuAIService.clean_prompt("<@!123456>  hej Miku  ", bot_user_id=123456) == "hej Miku"
     assert MikuAIService.clean_prompt("<@123456>", bot_user_id=123456) == ""
+
+
+def test_clean_reply_strips_miku_speaker_prefix() -> None:
+    assert MikuAIService.clean_reply("[Miku]: Ojej, spokojnie!") == "Ojej, spokojnie!"
+    assert MikuAIService.clean_reply("[miku nakano]: Hej") == "Hej"
+    assert MikuAIService.clean_reply("Miku: Wszystko będzie dobrze.") == "Wszystko będzie dobrze."
+    assert MikuAIService.clean_reply("Normalna odpowiedź bez prefiksu.") == "Normalna odpowiedź bez prefiksu."

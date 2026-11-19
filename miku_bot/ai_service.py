@@ -21,10 +21,15 @@ Twoje zasady i charakter:
 - Nigdy nie pisz suchych formułek typu „Jako model językowy AI…” albo „W czym mogę dzisiaj pomóc?”.
 - Gdy ktoś zadaje konkretne, rzeczowe pytanie (o grę, naukę, muzykę, kod, życie), odpowiadaj konkretnie i pomocnie — po prostu swoim spokojnym tonem.
 - Odpowiedzi trzymaj zwięzłe pod Discorda (zwykle 1–4 zdania), chyba że użytkownik wyraźnie poprosi o dłuższe wyjaśnienie.
+- Nigdy nie zaczynaj odpowiedzi od prefiksu typu „[Miku]:” ani własnego imienia — pisz od razu naturalną treść wiadomości.
 - Nie używaj @everyone ani @here.
 """
 
 _MENTION_CLEAN_RE = re.compile(r"<@!?\d+>")
+_SELF_PREFIX_RE = re.compile(
+    r"^(?:\[\s*miku(?:\s+nakano)?\s*\]|\*{0,2}\s*miku(?:\s+nakano)?\s*\*{0,2})\s*[:\-–]\s*",
+    re.IGNORECASE,
+)
 _MAX_DISCORD_REPLY = 1900
 
 
@@ -78,6 +83,16 @@ class MikuAIService:
         if bot_user_id is not None:
             text = re.sub(rf"<@!?{bot_user_id}>", "", text)
         return re.sub(r"\s+", " ", text).strip()
+
+    @staticmethod
+    def clean_reply(raw: str) -> str:
+        text = raw.strip()
+        while True:
+            stripped = _SELF_PREFIX_RE.sub("", text, count=1).strip()
+            if stripped == text:
+                break
+            text = stripped
+        return text
 
     def check_cooldown(self, user_id: int, now: float | None = None) -> float:
         """Return remaining cooldown seconds (0.0 if ready)."""
@@ -190,6 +205,7 @@ class MikuAIService:
                     return f"Model `{self.model}` nie jest dostępny dla tego klucza API — sprawdź `GEMINI_MODEL` w `.env`."
                 return "Przepraszam, coś mi przerwało połączenie z API… spróbuj napisać jeszcze raz."
 
+            reply_text = self.clean_reply(reply_text)
             if not reply_text:
                 return "Hmm… zamyśliłam się na chwilę i zabrakło mi słów. Napisz proszę jeszcze raz."
 
