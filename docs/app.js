@@ -206,4 +206,266 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   copyShipCmd.addEventListener('click', () => copyText(resCommand.textContent));
   updateShipPreview();
+
+  // ============================================================================
+  // Interactive Hero Sky Canvas: Mouse Water/Air Ripples + Floating 5-Color Petals
+  // ============================================================================
+  const hero = document.getElementById('top');
+  const canvas = document.getElementById('heroCanvas');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (hero && canvas && !reducedMotion) {
+    const ctx = canvas.getContext('2d');
+    const palette = ['#F5C52B', '#B465DA', '#38B6F0', '#7ED046', '#FF6EA8'];
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const ripples = [];
+    const bursts = [];
+    const petals = [];
+    const mouse = { x: -999, y: -999, active: false, lastRippleAt: 0 };
+
+    function resize() {
+      const rect = hero.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.max(1, Math.floor(width * dpr));
+      canvas.height = Math.max(1, Math.floor(height * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function seedPetals() {
+      petals.length = 0;
+      const count = width < 700 ? 14 : 24;
+      for (let i = 0; i < count; i++) {
+        petals.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.35) * 0.45,
+          vy: 0.22 + Math.random() * 0.42,
+          size: 5 + Math.random() * 6,
+          angle: Math.random() * Math.PI * 2,
+          spin: (Math.random() - 0.5) * 0.025,
+          color: palette[i % palette.length],
+          note: i % 5 === 0,
+        });
+      }
+    }
+
+    function spawnRipple(x, y, strong = false) {
+      ripples.push({
+        x,
+        y,
+        r: strong ? 10 : 6,
+        maxR: strong ? 140 : 88,
+        alpha: strong ? 0.52 : 0.34,
+        speed: strong ? 2.4 : 1.75,
+        tint: strong ? '#ffffff' : '#d8f4ff',
+      });
+      if (strong) {
+        ripples.push({
+          x,
+          y,
+          r: 2,
+          maxR: 96,
+          alpha: 0.42,
+          speed: 1.5,
+          tint: '#ffcee2',
+        });
+        for (let i = 0; i < 8; i++) {
+          const ang = (Math.PI * 2 * i) / 8 + Math.random() * 0.3;
+          const spd = 1.2 + Math.random() * 2.2;
+          bursts.push({
+            x,
+            y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 0.5,
+            alpha: 0.95,
+            size: 4 + Math.random() * 4,
+            color: palette[i % palette.length],
+            symbol: i % 2 === 0 ? '♪' : '✿',
+          });
+        }
+      }
+      if (ripples.length > 28) ripples.splice(0, ripples.length - 28);
+    }
+
+    hero.addEventListener('pointermove', (e) => {
+      const rect = hero.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      mouse.x = x;
+      mouse.y = y;
+      mouse.active = true;
+      const now = performance.now();
+      if (now - mouse.lastRippleAt > 85) {
+        spawnRipple(x, y, false);
+        mouse.lastRippleAt = now;
+      }
+    });
+
+    hero.addEventListener('pointerleave', () => {
+      mouse.active = false;
+    });
+
+    hero.addEventListener('pointerdown', (e) => {
+      const rect = hero.getBoundingClientRect();
+      spawnRipple(e.clientX - rect.left, e.clientY - rect.top, true);
+    });
+
+    resize();
+    seedPetals();
+    window.addEventListener('resize', () => {
+      resize();
+      seedPetals();
+    });
+
+    let rafId = 0;
+    function frame() {
+      ctx.clearRect(0, 0, width, height);
+
+      // Soft ambient glow following pointer
+      if (mouse.active) {
+        const glow = ctx.createRadialGradient(mouse.x, mouse.y, 4, mouse.x, mouse.y, 130);
+        glow.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+        glow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 130, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw expanding water/air ripples
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i];
+        rp.r += rp.speed;
+        const progress = rp.r / rp.maxR;
+        const a = rp.alpha * (1 - progress);
+        if (progress >= 1 || a <= 0.01) {
+          ripples.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.strokeStyle = rp.tint;
+        ctx.lineWidth = Math.max(1, 2.6 * (1 - progress));
+        ctx.beginPath();
+        ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Draw drifting 5-color petals & musical notes (gently pushed by mouse!)
+      for (const p of petals) {
+        if (mouse.active) {
+          const dx = p.x - mouse.x;
+          const dy = p.y - mouse.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > 1 && dist < 110) {
+            const push = (1 - dist / 110) * 0.42;
+            p.vx += (dx / dist) * push;
+            p.vy += (dy / dist) * push;
+          }
+        }
+        p.vx *= 0.985;
+        p.vy = p.vy * 0.985 + 0.008;
+        p.x += p.vx + Math.sin(p.angle) * 0.25;
+        p.y += p.vy;
+        p.angle += p.spin;
+
+        if (p.y > height + 20) { p.y = -16; p.x = Math.random() * width; p.vy = 0.25 + Math.random() * 0.35; }
+        if (p.x > width + 20) p.x = -16;
+        if (p.x < -20) p.x = width + 16;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.globalAlpha = 0.72;
+        ctx.fillStyle = p.color;
+        if (p.note) {
+          ctx.font = `700 ${Math.round(p.size * 2.1)}px "Plus Jakarta Sans", sans-serif`;
+          ctx.fillText('♪', -p.size / 2, p.size / 2);
+        } else {
+          ctx.beginPath();
+          ctx.ellipse(0, 0, p.size, p.size * 0.58, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Draw click burst notes/petals
+      for (let i = bursts.length - 1; i >= 0; i--) {
+        const b = bursts[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        b.vy += 0.03;
+        b.alpha -= 0.022;
+        if (b.alpha <= 0) {
+          bursts.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.globalAlpha = b.alpha;
+        ctx.fillStyle = b.color;
+        ctx.font = `700 ${Math.round(b.size * 2.4)}px "Plus Jakarta Sans", sans-serif`;
+        ctx.fillText(b.symbol, b.x, b.y);
+        ctx.restore();
+      }
+
+      rafId = requestAnimationFrame(frame);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        cancelAnimationFrame(rafId);
+      } else {
+        rafId = requestAnimationFrame(frame);
+      }
+    });
+    rafId = requestAnimationFrame(frame);
+  }
+
+  // Interactive Miku Quote Bubble on Hero Avatar click
+  const mikuQuoteBtn = document.getElementById('mikuQuoteBtn');
+  const mikuBubble = document.getElementById('mikuBubble');
+  const mikuQuotes = [
+    'Załóż słuchawki… puszczamy coś na kanale?',
+    'Wpisz !s na serwerze, zobaczymy co wyjdzie…',
+    'Chwila przerwy przy matchy zawsze pomaga.',
+    'Tak między nami — Takeda Shingen był genialnym strategiem.',
+    'Pamiętaj, że działają zarówno !p jak i /play.',
+  ];
+  let quoteIdx = 0;
+  let bubbleTimer = null;
+
+  if (mikuQuoteBtn && mikuBubble) {
+    mikuQuoteBtn.addEventListener('click', () => {
+      mikuBubble.textContent = mikuQuotes[quoteIdx % mikuQuotes.length];
+      quoteIdx += 1;
+      mikuBubble.classList.add('show');
+      clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(() => mikuBubble.classList.remove('show'), 3600);
+    });
+  }
+
+  // Smooth scroll-reveal for feature cards
+  const revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.14 }
+    );
+    revealEls.forEach((el) => observer.observe(el));
+  } else {
+    revealEls.forEach((el) => el.classList.add('visible'));
+  }
 });

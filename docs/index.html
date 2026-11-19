@@ -53,26 +53,23 @@
     </div>
   </div>
 
-  <!-- HERO: Vivid Summer Sky & Clouds Backdrop -->
+  <!-- HERO: Vivid Summer Sky & Interactive Canvas Backdrop -->
   <header class="hero" id="top">
+    <canvas class="hero-canvas" id="heroCanvas" aria-hidden="true"></canvas>
     <div class="sky-clouds" aria-hidden="true">
       <div class="cloud c1"></div>
       <div class="cloud c2"></div>
       <div class="cloud c3"></div>
     </div>
-    <div class="petal-field" aria-hidden="true">
-      <span class="petal p1"></span>
-      <span class="petal p2"></span>
-      <span class="petal p3"></span>
-      <span class="petal p4"></span>
-      <span class="petal p5"></span>
-    </div>
 
     <div class="hero-content">
-      <div class="hero-visual">
+      <div class="hero-visual" id="heroVisual">
         <div class="hero-halo" aria-hidden="true"></div>
-        <img src="assets/miku-hero.png" alt="Miku Nakano w okularach — avatar Miku Bot" class="hero-avatar">
-        <div class="hero-badge">ONLINE · BOSKI SERWER</div>
+        <button class="hero-avatar-btn" id="mikuQuoteBtn" type="button" aria-label="Kliknij Miku, aby zobaczyć jej cytat">
+          <img src="assets/miku-hero.png" alt="Miku Nakano w okularach — avatar Miku Bot" class="hero-avatar">
+        </button>
+        <div class="miku-bubble" id="mikuBubble" aria-live="polite">Załóż słuchawki… puszczamy coś na kanale?</div>
+        <div class="hero-badge"><span class="live-dot" aria-hidden="true"></span>ONLINE · BOSKI SERWER</div>
       </div>
 
       <div class="hero-title-lockup">
@@ -80,7 +77,7 @@
           <i class="d1"></i><i class="d2"></i><i class="d3"></i><i class="d4"></i><i class="d5"></i>
         </div>
         <h1 class="hero-wordmark">Miku Bot</h1>
-        <p class="hero-subtitle">MUZYKA · KARTY SHIP · MINI-AI MIKU NAKANO</p>
+        <p class="hero-subtitle">MUZYKA · ZGODNOŚĆ !s · MINI-AI MIKU NAKANO</p>
         <div class="hero-actions">
           <a href="#commands" class="espresso-btn">LISTA KOMEND</a>
           <a href="#ship-lab" class="sky-pill-btn">PRZETESTUJ !s</a>
@@ -94,6 +91,16 @@
         <span class="five-star" aria-hidden="true">✿</span>
         <p>Działają oba style naraz — szybki prefiks <strong>!p</strong>, <strong>!s</strong>, <strong>!miku</strong> oraz wszystkie nowoczesne slash-komendy <strong>/play</strong>, <strong>/ship</strong>, <strong>/miku</strong>!</p>
       </div>
+    </div>
+
+    <!-- Animated Coastal Surf Waves transitioning into Introduction -->
+    <div class="hero-waves" aria-hidden="true">
+      <svg class="wave-svg wave-back" viewBox="0 0 1440 120" preserveAspectRatio="none">
+        <path d="M0,48 C240,108 480,0 720,56 C960,112 1200,12 1440,56 L1440,120 L0,120 Z" fill="rgba(255,255,255,0.34)"/>
+      </svg>
+      <svg class="wave-svg wave-front" viewBox="0 0 1440 120" preserveAspectRatio="none">
+        <path d="M0,72 C220,24 460,110 720,64 C980,18 1220,104 1440,62 L1440,120 L0,120 Z" fill="#76D9EA"/>
+      </svg>
     </div>
   </header>
 
@@ -147,9 +154,12 @@
 
       <div class="feature-stack">
         <!-- Feature 1: Music -->
-        <article class="character-card">
+        <article class="character-card reveal">
           <div class="char-art-wrap art-blue">
-            <img src="assets/miku-music.png" alt="Chibi Miku w dużych niebieskich słuchawkach — moduł muzyczny" class="art-cutout">
+            <img src="assets/miku-music.png" alt="Chibi Miku w dużych niebieskich słuchawkach — moduł muzyczny" class="art-cutout float-slow">
+            <div class="eq-bars" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
             <span class="char-num">01</span>
           </div>
           <div class="char-body">
@@ -179,7 +189,7 @@
         </article>
 
         <!-- Feature 2: Ship -->
-        <article class="character-card reverse">
+        <article class="character-card reverse reveal">
           <div class="char-art-wrap art-pink">
             <img src="assets/miku-heart.png" alt="Miku pokazująca serduszko — moduł Ship">
             <span class="char-num">02</span>
@@ -209,7 +219,7 @@
         </article>
 
         <!-- Feature 3: Mini AI -->
-        <article class="character-card">
+        <article class="character-card reveal">
           <div class="char-art-wrap art-violet">
             <img src="assets/miku-think.png" alt="Zamyślona Miku — moduł Mini-AI">
             <span class="char-num">03</span>
