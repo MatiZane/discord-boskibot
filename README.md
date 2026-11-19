@@ -2,7 +2,7 @@
 
 Lokalny bot na prywatny serwer Discorda z klimatem **Miku Nakano**:
 - **Muzyka z YouTube** (zwykłe linki, **YouTube Shorts**, playlisty do 50 utworów, wyszukiwanie po nazwie, kolejka, pętla, przyciski sterujące oraz regulacja prędkości `0,5×–2×` z naturalną tonacją).
-- **Karty zgodności (`!s` / `/ship`)** — stały, symetryczny wynik dla pary nicków lub `@wzmianek` (kolejność osób nie zmienia wyniku) oraz generowana w locie karta graficzna PNG z avatarami i komentarzem Miku.
+- **Zgodność (`!s` / `/ship`)** — stały, symetryczny wynik dla pary nicków, `@wzmianek` lub dowolnych haseł w jednej natychmiastowej linijce z serwerowymi emotkami Miku.
 - **Mini-AI Miku Nakano** — rozmowy przez darmowe **Google Gemini API** po `@wzmiankowaniu` bota, po odpowiedzi (`Reply`) na jego wiadomość lub przez `!miku` / `/miku`, z pamięcią ostatnich wiadomości na kanale, krótkim cooldownem i automatycznym zapasem modeli Flash (`gemini-3.6-flash` → `gemini-3.5-flash` → `gemini-2.5-flash`).
 
 Wszystkie główne komendy działają **hybrydowo** — zarówno przez klasyczny prefiks `!`, jak i przez slash-komendy `/`.

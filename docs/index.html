@@ -187,8 +187,8 @@
           <div class="char-body">
             <div class="char-header">
               <div>
-                <p class="char-kicker">COMPATIBILITY CARD · STAŁY WYNIK</p>
-                <h3>Karty zgodności Ship (!s)</h3>
+                <p class="char-kicker">COMPATIBILITY · STAŁY WYNIK</p>
+                <h3>Zgodność Ship (!s)</h3>
               </div>
               <span class="cmd-pill">!s / /ship</span>
             </div>
@@ -197,12 +197,14 @@
               <span class="sr-c1"></span><span class="sr-c2"></span><span class="sr-c3"></span><span class="sr-c4"></span><span class="sr-c5"></span>
             </div>
             <p class="char-desc">
-              Nasz serwerowy klasyk w nowej, graficznej wersji! Wpisz <code>!s @nick1 nick2</code> (albo samo <code>!s nick</code>, żeby sparować się ze sobą) — bot wyliczy <strong>stały i symetryczny wynik</strong> dla tej pary, wygeneruje kartę PNG z Waszymi avatarami, nazwą shipu i komentarzem Miku oraz dorzuci serwerowe emotki Miku.
+              Nasz serwerowy klasyk w lekkiej, natychmiastowej formie! Wpisz <code>!s @nick1 nick2</code> (albo dowolne memiczne hasło, np. <code>!s @nick zdanie_studiow</code> — przy jednym argumencie paruje z Tobą). Bot wyliczy <strong>stały i symetryczny wynik</strong> i odpowie w jednej linijce z dopasowanymi serwerowymi emotkami Miku.
             </p>
-            <div class="ship-preview-box">
-              <img src="assets/ship-sample.png" alt="Przykładowa wygenerowana karta Ship z Miku Bota" loading="lazy">
-              <span class="preview-caption">Rzeczywisty wygląd karty PNG generowanej na czacie Discorda</span>
-            </div>
+            <ul class="mini-tags">
+              <li>Stały wynik SHA-256</li>
+              <li>@wzmianki i dowolne hasła</li>
+              <li>Natychmiastowa 1 linijka</li>
+              <li>Serwerowe emotki Miku</li>
+            </ul>
           </div>
         </article>
 
@@ -350,10 +352,10 @@
         <article class="cmd-card" data-cat="ship">
           <div class="cmd-meta">
             <span class="cat-dot cat-ship">SHIP</span>
-            <div class="cmd-syntax"><code>!s @nick1 nick2</code> <span class="sep">/</span> <code>/ship</code></div>
+            <div class="cmd-syntax"><code>!s @nick1 hasło</code> <span class="sep">/</span> <code>/ship</code></div>
           </div>
-          <p class="cmd-text">Wylicza stały, symetryczny procent zgodności dwóch osób i generuje obrazkową kartę PNG z avatarami, paskiem oraz komentarzem Miku. Przy jednym nicku paruje z Tobą!</p>
-          <button class="copy-btn" data-copy="!s @matizane Miku" type="button">Kopiuj przykład</button>
+          <p class="cmd-text">Wylicza stały, symetryczny procent zgodności dwóch osób lub dowolnego hasła i odpowiada natychmiast jedną linijką z emotkami Miku. Przy jednym argumencie paruje z Tobą!</p>
+          <button class="copy-btn" data-copy="!s @matizane piracki_token" type="button">Kopiuj przykład</button>
         </article>
 
         <article class="cmd-card" data-cat="ai">

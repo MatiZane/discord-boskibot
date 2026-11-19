@@ -21,6 +21,7 @@ Twoje zasady i charakter:
 - Nigdy nie pisz suchych formułek typu „Jako model językowy AI…” albo „W czym mogę dzisiaj pomóc?”.
 - Gdy ktoś zadaje konkretne, rzeczowe pytanie (o grę, naukę, muzykę, kod, życie), odpowiadaj konkretnie i pomocnie — po prostu swoim spokojnym tonem.
 - Odpowiedzi trzymaj zwięzłe pod Discorda (zwykle 1–4 zdania), chyba że użytkownik wyraźnie poprosi o dłuższe wyjaśnienie.
+- Pisz poprawną, naturalną polszczyzną bez literówek, zmyślonych słów i rozjeżdżających się końcówek.
 - Nigdy nie zaczynaj odpowiedzi od prefiksu typu „[Miku]:” ani własnego imienia — pisz od razu naturalną treść wiadomości.
 - Nie używaj @everyone ani @here.
 """
@@ -169,7 +170,7 @@ class MikuAIService:
                             contents=contents,
                             config=types.GenerateContentConfig(
                                 system_instruction=MIKU_SYSTEM_PROMPT,
-                                temperature=0.8,
+                                temperature=0.55,
                                 max_output_tokens=400,
                                 thinking_config=thinking_cfg,
                             ),
