@@ -23,6 +23,7 @@ class BotConfig:
     ai_history_turns: int
     voice_idle_seconds: int
     ffmpeg_executable: str
+    site_url: str
 
     @property
     def ai_enabled(self) -> bool:
@@ -92,12 +93,13 @@ def load_config(env_path: str | Path | None = None) -> BotConfig:
 
     discord_token = os.getenv("DISCORD_TOKEN", "").strip()
     gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.6-flash").strip() or "gemini-3.6-flash"
-    fallback_raw = os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash,gemini-2.5-flash")
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite").strip() or "gemini-3.1-flash-lite"
+    fallback_raw = os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.5-flash-lite,gemini-3.6-flash,gemma-4-26b-a4b-it")
     gemini_fallback_models = tuple(
         dict.fromkeys(m.strip() for m in fallback_raw.split(",") if m.strip() and m.strip() != gemini_model)
     )
     command_prefix = os.getenv("COMMAND_PREFIX", "!").strip() or "!"
+    site_url = os.getenv("SITE_URL", "https://matizane.github.io/discord-boskibot/").strip()
 
     return BotConfig(
         discord_token=discord_token,
@@ -113,4 +115,5 @@ def load_config(env_path: str | Path | None = None) -> BotConfig:
         ai_history_turns=_parse_int(os.getenv("AI_HISTORY_TURNS"), 10, minimum=2),
         voice_idle_seconds=_parse_int(os.getenv("VOICE_IDLE_SECONDS"), 300, minimum=30),
         ffmpeg_executable=resolve_ffmpeg(os.getenv("FFMPEG_PATH", "").strip()),
+        site_url=site_url,
     )

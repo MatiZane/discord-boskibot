@@ -40,18 +40,30 @@ class MikuAIService:
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-3.6-flash",
-        fallback_models: tuple[str, ...] = ("gemini-3.5-flash", "gemini-2.5-flash"),
+        model: str = "gemini-3.1-flash-lite",
+        fallback_models: tuple[str, ...] = ("gemini-3.5-flash-lite", "gemini-3.6-flash", "gemma-4-26b-a4b-it"),
         cooldown_seconds: float = 4.0,
         history_turns: int = 10,
+        request_timeout: float = 12.0,
         client: object | None = None,
     ) -> None:
         self.api_key = api_key.strip()
-        self.model = model.strip() or "gemini-3.6-flash"
+        self.model = model.strip() or "gemini-3.1-flash-lite"
         self.fallback_models = tuple(m for m in fallback_models if m and m != self.model)
         self.cooldown_seconds = max(0.0, cooldown_seconds)
         self.history_turns = max(2, history_turns)
-        self._client = client if client is not None else (genai.Client(api_key=self.api_key) if self.api_key else None)
+        self.request_timeout = max(2.0, request_timeout)
+        if client is not None:
+            self._client = client
+        elif self.api_key:
+            self._client = genai.Client(
+                api_key=self.api_key,
+                http_options=types.HttpOptions(
+                    retry_options=types.HttpRetryOptions(attempts=1),
+                ),
+            )
+        else:
+            self._client = None
         self._histories: dict[int, deque[ChatTurn]] = {}
         self._cooldowns: dict[int, float] = {}
         self._channel_locks: dict[int, asyncio.Lock] = {}
@@ -131,14 +143,23 @@ class MikuAIService:
             candidates = (self.model, *self.fallback_models)
             for idx, model_name in enumerate(candidates):
                 try:
-                    response = await self._client.aio.models.generate_content(
-                        model=model_name,
-                        contents=contents,
-                        config=types.GenerateContentConfig(
-                            system_instruction=MIKU_SYSTEM_PROMPT,
-                            temperature=0.8,
-                            max_output_tokens=600,
+                    thinking_cfg = (
+                        types.ThinkingConfig(thinking_level="MINIMAL")
+                        if model_name.startswith("gemini-3")
+                        else None
+                    )
+                    response = await asyncio.wait_for(
+                        self._client.aio.models.generate_content(
+                            model=model_name,
+                            contents=contents,
+                            config=types.GenerateContentConfig(
+                                system_instruction=MIKU_SYSTEM_PROMPT,
+                                temperature=0.8,
+                                max_output_tokens=400,
+                                thinking_config=thinking_cfg,
+                            ),
                         ),
+                        timeout=self.request_timeout,
                     )
                     reply_text = (getattr(response, "text", None) or "").strip()
                     last_error = None
@@ -146,13 +167,18 @@ class MikuAIService:
                 except Exception as exc:
                     last_error = exc
                     err_lower = str(exc).lower()
-                    log.warning("Gemini API error on %s: %s", model_name, exc)
-                    retryable = any(code in err_lower for code in ("503", "unavailable", "429", "resource_exhausted", "404", "not found"))
+                    log.warning("Gemini API error on %s: %s: %s", model_name, type(exc).__name__, exc)
+                    is_timeout = isinstance(exc, asyncio.TimeoutError)
+                    retryable = is_timeout or any(
+                        code in err_lower for code in ("503", "unavailable", "429", "resource_exhausted", "404", "not found")
+                    )
                     if retryable and idx + 1 < len(candidates):
                         continue
                     break
 
             if last_error is not None:
+                if isinstance(last_error, asyncio.TimeoutError):
+                    return "Serwery Gemini odpowiadają teraz zbyt wolno… spróbuj napisać za chwilkę. 🎧"
                 lowered = str(last_error).lower()
                 if "429" in lowered or "resource_exhausted" in lowered or "quota" in lowered:
                     return "Chwilkę… wyczerpał się chwilowy limit zapytań Gemini API. Spróbuj za kilkanaście sekund. 🎧"

@@ -6,6 +6,7 @@ import logging
 import discord
 from discord.ext import commands
 
+from ..bot import IDLE_ACTIVITY
 from ..music_engine import (
     DEFAULT_SPEED,
     MAX_SPEED,
@@ -87,6 +88,7 @@ class PlayerControlsView(discord.ui.View):
         state.cancel_idle_timer()
         vc.stop()
         await vc.disconnect(force=False)
+        await self.cog.bot.change_presence(activity=IDLE_ACTIVITY)
         await interaction.response.send_message("Zatrzymałam muzykę i opuściłam kanał głosowy.", ephemeral=True)
 
 
@@ -170,7 +172,7 @@ class MusicCog(commands.Cog):
 
             next_item = state.next_track()
             if next_item is None:
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="muzyki 🎧"))
+                await self.bot.change_presence(activity=IDLE_ACTIVITY)
                 self._schedule_idle_disconnect(guild, state)
                 return
 
@@ -336,6 +338,7 @@ class MusicCog(commands.Cog):
         vc = ctx.guild.voice_client
         vc.stop()
         await vc.disconnect(force=False)
+        await self.bot.change_presence(activity=IDLE_ACTIVITY)
         await ctx.send("⏹️ Zatrzymano muzykę i wyczyszczono kolejkę.")
 
     @play.error

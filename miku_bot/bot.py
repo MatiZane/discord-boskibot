@@ -14,7 +14,10 @@ EXTENSIONS = (
     "miku_bot.cogs.ship",
     "miku_bot.cogs.ai",
     "miku_bot.cogs.music",
+    "miku_bot.cogs.info",
 )
+
+IDLE_ACTIVITY = discord.CustomActivity(name="🎧 !p · !s · !miku")
 
 
 class MikuBot(commands.Bot):
@@ -56,6 +59,4 @@ class MikuBot(commands.Bot):
     async def on_ready(self) -> None:
         log.info("Miku Bot zalogowana jako %s (id=%s)", self.user, self.user.id if self.user else "?")
         log.info("FFmpeg: %s | AI aktywne: %s (%s)", self.config.ffmpeg_executable, self.ai_service.enabled, self.config.gemini_model)
-        await self.change_presence(
-            activity=discord.Activity(type=discord.ActivityType.listening, name="muzyki 🎧")
-        )
+        await self.change_presence(activity=IDLE_ACTIVITY)
