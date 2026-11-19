@@ -371,12 +371,45 @@ code {
   position: relative;
   min-height: 94vh;
   padding: 90px 20px 104px;
-  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 52%, var(--sky-low) 92%, #76d9ea 100%);
+  background: linear-gradient(180deg, #16549c 0%, #378ee0 44%, #82c8f5 78%, #bde8fc 93%, #76d9ea 100%);
+  background-size: 100% 130%;
+  animation: skyBreathe 18s ease-in-out infinite alternate;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+}
+
+@keyframes skyBreathe {
+  0% { background-position: 50% 0%; }
+  100% { background-position: 50% 100%; }
+}
+
+.sky-rays {
+  position: absolute;
+  inset: -20% -10% 10% -10%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    conic-gradient(
+      from 165deg at 18% -10%,
+      transparent 0deg,
+      rgba(255, 255, 255, 0.14) 12deg,
+      transparent 24deg,
+      rgba(255, 255, 255, 0.1) 36deg,
+      transparent 52deg,
+      rgba(255, 250, 232, 0.14) 66deg,
+      transparent 82deg
+    );
+  filter: blur(18px);
+  animation: raySway 16s ease-in-out infinite alternate;
+  transform-origin: 18% 0%;
+}
+
+@keyframes raySway {
+  from { transform: rotate(-3deg) scale(1); opacity: 0.72; }
+  to { transform: rotate(4deg) scale(1.06); opacity: 0.96; }
 }
 
 .hero-canvas {
@@ -386,35 +419,6 @@ code {
   height: 100%;
   z-index: 1;
   pointer-events: none;
-}
-
-.sky-clouds {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.cloud {
-  position: absolute;
-  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.42) 45%, rgba(255, 255, 255, 0) 72%);
-  border-radius: 50%;
-  filter: blur(8px);
-  will-change: transform;
-}
-
-.cloud.c1 { width: 540px; height: 220px; top: 8%; left: -80px; animation: cloudDriftA 28s ease-in-out infinite alternate; }
-.cloud.c2 { width: 660px; height: 260px; top: 22%; right: -120px; animation: cloudDriftB 34s ease-in-out infinite alternate; }
-.cloud.c3 { width: 780px; height: 280px; bottom: 20px; left: 16%; animation: cloudDriftA 40s ease-in-out infinite alternate-reverse; }
-
-@keyframes cloudDriftA {
-  from { transform: translate3d(-24px, 0, 0) scale(1); }
-  to { transform: translate3d(42px, -10px, 0) scale(1.04); }
-}
-
-@keyframes cloudDriftB {
-  from { transform: translate3d(26px, 0, 0) scale(1); }
-  to { transform: translate3d(-44px, 12px, 0) scale(1.05); }
 }
 
 .hero-waves {
@@ -801,7 +805,7 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cloud, .wave-back, .wave-front, .hero-avatar-btn, .float-slow, .eq-bars span, .live-dot {
+  .hero, .sky-rays, .wave-back, .wave-front, .hero-avatar-btn, .float-slow, .eq-bars span, .live-dot {
     animation: none !important;
   }
   .reveal {
