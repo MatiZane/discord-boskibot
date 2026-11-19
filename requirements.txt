@@ -1,4 +1,6 @@
-discord.py[voice]>=2.4.0
+discord.py[voice]>=2.7.1,<2.8.0
+# discord.py 2.7.x requires davey 0.1.x (davey 0.2.0 changed transition APIs -> silent DAVE E2EE voice)
+davey>=0.1.6,<0.2.0
 audioop-lts>=0.2.1; python_version >= "3.13"
 yt-dlp>=2025.1.15
 imageio-ffmpeg>=0.5.1

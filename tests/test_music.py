@@ -62,3 +62,16 @@ def test_duration_and_guild_queue_loop_behavior() -> None:
     second = state.next_track()
     assert second is not None and second.title == "Second"
     assert state.next_track() is None
+
+
+def test_davey_version_compatible_with_discord_py() -> None:
+    import davey
+    import discord
+
+    discord_minor = tuple(int(p) for p in discord.__version__.split(".")[:2])
+    davey_minor = tuple(int(p) for p in davey.__version__.split(".")[:2])
+    if discord_minor < (2, 8):
+        assert davey_minor < (0, 2), (
+            f"davey {davey.__version__} breaks DAVE voice encryption on discord.py {discord.__version__} "
+            "(can_encrypt stays False); pin davey>=0.1.6,<0.2.0."
+        )

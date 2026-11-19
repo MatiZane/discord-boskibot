@@ -135,11 +135,20 @@ class MusicCog(commands.Cog):
             if dave_ver == 0 or can_enc:
                 break
             await asyncio.sleep(0.1)
+        dave_session = getattr(conn, "dave_session", None)
+        try:
+            import davey  # type: ignore
+
+            davey_ver = getattr(davey, "__version__", "?")
+        except Exception:
+            davey_ver = "missing"
         log.info(
-            "Voice ready: connected=%s dave_ver=%s can_encrypt=%s opus_loaded=%s",
+            "Voice ready: connected=%s dave_ver=%s can_encrypt=%s dave_status=%s davey=%s opus_loaded=%s",
             vc.is_connected(),
             getattr(conn, "dave_protocol_version", 0),
             getattr(conn, "can_encrypt", False),
+            getattr(dave_session, "status", None),
+            davey_ver,
             discord.opus.is_loaded(),
         )
 
