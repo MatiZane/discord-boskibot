@@ -209,9 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ============================================================================
   // Living Anime Sky Canvas:
-  // - 3 parallax layers of fluffy sunlit cumulus clouds gliding across the sky
-  // - Soft blurred cloud-mist ribbon trailing the cursor + gentle ripples
-  // - Floating 5-color petals & musical notes swept by the cursor cloud wake
+  // - 3 smooth depth layers of fluffy sunlit cumulus clouds gliding across the sky
+  // - Gently drifting 5-color petals & musical notes
   // ============================================================================
   const hero = document.getElementById('top');
   const canvas = document.getElementById('heroCanvas');
@@ -225,25 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const clouds = [];
-    const cloudTrail = [];
-    const ripples = [];
-    const bursts = [];
     const petals = [];
-    const mouse = {
-      x: -999,
-      y: -999,
-      smoothX: -999,
-      smoothY: -999,
-      prevX: -999,
-      prevY: -999,
-      nx: 0,
-      ny: 0,
-      active: false,
-      lastRippleAt: 0,
-      lastPuffAt: 0,
-    };
 
-    // Pre-render a soft glowing cloud-puff sprite once (ultra-fast 60fps stamping!)
     function makePuffSprite(size, innerAlpha, tintRgb) {
       const c = document.createElement('canvas');
       c.width = size;
@@ -260,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return c;
     }
 
-    // Pre-render fluffy multi-lobe anime cumulus cloud sprite
     function makeCloudSprite(variant) {
       const cw = 460;
       const ch = 220;
@@ -296,12 +277,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
       const lobes = layouts[variant % layouts.length];
 
-      // Soft sky-blue underside shadow first
       for (const l of lobes) {
         const d = 150 * l.s;
         g.drawImage(puffUnder, cw * l.x - d / 2, ch * (l.y + 0.08) - d / 2, d, d * 0.78);
       }
-      // Bright sunlit white cloud puffs on top
       for (const l of lobes) {
         const d = 150 * l.s;
         g.drawImage(puffWhite, cw * l.x - d / 2, ch * l.y - d / 2, d, d * 0.82);
@@ -310,8 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const cloudSprites = [makeCloudSprite(0), makeCloudSprite(1), makeCloudSprite(2)];
-    const trailSpriteWhite = makePuffSprite(160, 0.52, '255, 255, 255');
-    const trailSpriteMist = makePuffSprite(160, 0.38, '214, 242, 255');
 
     function resize() {
       const rect = hero.getBoundingClientRect();
@@ -327,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clouds.length = 0;
       const cloudCount = width < 700 ? 6 : 10;
       for (let i = 0; i < cloudCount; i++) {
-        const layer = i % 3; // 0 = far/slow, 1 = mid, 2 = near/faster
+        const layer = i % 3;
         const scale = (layer === 0 ? 0.58 : layer === 1 ? 0.86 : 1.18) * (0.85 + Math.random() * 0.3);
         clouds.push({
           sprite: cloudSprites[i % cloudSprites.length],
@@ -336,125 +313,26 @@ document.addEventListener('DOMContentLoaded', () => {
           scale,
           speed: (layer === 0 ? 0.14 : layer === 1 ? 0.28 : 0.46) * (0.8 + Math.random() * 0.45),
           alpha: layer === 0 ? 0.46 : layer === 1 ? 0.68 : 0.82,
-          parallax: layer === 0 ? 10 : layer === 1 ? 22 : 36,
           bobPhase: Math.random() * Math.PI * 2,
         });
       }
 
       petals.length = 0;
-      const count = width < 700 ? 14 : 24;
+      const count = width < 700 ? 12 : 20;
       for (let i = 0; i < count; i++) {
         petals.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          vx: 0.12 + Math.random() * 0.35,
-          vy: 0.18 + Math.random() * 0.36,
-          size: 5 + Math.random() * 5.5,
+          vx: 0.12 + Math.random() * 0.3,
+          vy: 0.18 + Math.random() * 0.32,
+          size: 5 + Math.random() * 5,
           angle: Math.random() * Math.PI * 2,
-          spin: (Math.random() - 0.5) * 0.025,
+          spin: (Math.random() - 0.5) * 0.022,
           color: palette[i % palette.length],
           note: i % 5 === 0,
         });
       }
     }
-
-    function spawnCloudPuff(x, y, vx, vy, big = false) {
-      const jitterX = (Math.random() - 0.5) * (big ? 28 : 14);
-      const jitterY = (Math.random() - 0.5) * (big ? 24 : 14);
-      cloudTrail.push({
-        x: x + jitterX,
-        y: y + jitterY,
-        vx: vx * 0.16 + (Math.random() - 0.5) * 0.45,
-        vy: vy * 0.16 - 0.18 - Math.random() * 0.25,
-        size: big ? 84 + Math.random() * 44 : 58 + Math.random() * 34,
-        grow: big ? 1.35 : 0.85,
-        alpha: big ? 0.72 : 0.48,
-        fade: big ? 0.011 : 0.013,
-        sprite: Math.random() > 0.38 ? trailSpriteWhite : trailSpriteMist,
-      });
-      if (cloudTrail.length > 52) cloudTrail.splice(0, cloudTrail.length - 52);
-    }
-
-    function spawnRipple(x, y, strong = false) {
-      ripples.push({
-        x,
-        y,
-        r: strong ? 10 : 6,
-        maxR: strong ? 148 : 84,
-        alpha: strong ? 0.5 : 0.28,
-        speed: strong ? 2.3 : 1.65,
-        tint: strong ? '#ffffff' : '#d8f4ff',
-      });
-      if (strong) {
-        ripples.push({
-          x,
-          y,
-          r: 2,
-          maxR: 102,
-          alpha: 0.4,
-          speed: 1.45,
-          tint: '#ffcee2',
-        });
-        for (let i = 0; i < 6; i++) {
-          const ang = (Math.PI * 2 * i) / 6 + Math.random() * 0.4;
-          spawnCloudPuff(x, y, Math.cos(ang) * 5, Math.sin(ang) * 5, true);
-        }
-        for (let i = 0; i < 8; i++) {
-          const ang = (Math.PI * 2 * i) / 8 + Math.random() * 0.3;
-          const spd = 1.2 + Math.random() * 2.1;
-          bursts.push({
-            x,
-            y,
-            vx: Math.cos(ang) * spd,
-            vy: Math.sin(ang) * spd - 0.5,
-            alpha: 0.95,
-            size: 4 + Math.random() * 4,
-            color: palette[i % palette.length],
-            symbol: i % 2 === 0 ? '♪' : '✿',
-          });
-        }
-      }
-      if (ripples.length > 26) ripples.splice(0, ripples.length - 26);
-    }
-
-    hero.addEventListener('pointermove', (e) => {
-      const rect = hero.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const dx = mouse.active ? x - mouse.prevX : 0;
-      const dy = mouse.active ? y - mouse.prevY : 0;
-      mouse.prevX = x;
-      mouse.prevY = y;
-      mouse.x = x;
-      mouse.y = y;
-      if (!mouse.active) {
-        mouse.smoothX = x;
-        mouse.smoothY = y;
-      }
-      mouse.nx = (x / Math.max(1, width) - 0.5) * 2;
-      mouse.ny = (y / Math.max(1, height) - 0.5) * 2;
-      mouse.active = true;
-
-      const now = performance.now();
-      const speed = Math.hypot(dx, dy);
-      if (now - mouse.lastPuffAt > 24 && speed > 1.5) {
-        spawnCloudPuff(x, y, dx, dy, false);
-        mouse.lastPuffAt = now;
-      }
-      if (now - mouse.lastRippleAt > 110 && speed > 4) {
-        spawnRipple(x, y, false);
-        mouse.lastRippleAt = now;
-      }
-    });
-
-    hero.addEventListener('pointerleave', () => {
-      mouse.active = false;
-    });
-
-    hero.addEventListener('pointerdown', (e) => {
-      const rect = hero.getBoundingClientRect();
-      spawnRipple(e.clientX - rect.left, e.clientY - rect.top, true);
-    });
 
     resize();
     seedSky();
@@ -469,16 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
       tick += 0.012;
       ctx.clearRect(0, 0, width, height);
 
-      // Smooth cursor easing for subtle sky parallax + soft mist halo
-      if (mouse.active) {
-        mouse.smoothX += (mouse.x - mouse.smoothX) * 0.14;
-        mouse.smoothY += (mouse.y - mouse.smoothY) * 0.14;
-      } else {
-        mouse.nx *= 0.96;
-        mouse.ny *= 0.96;
-      }
-
-      // 1. Drifting multi-layer anime cumulus clouds
       for (const cl of clouds) {
         cl.x += cl.speed;
         const drawW = cl.sprite.width * cl.scale;
@@ -486,87 +354,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cl.x - drawW / 2 > width + 80) {
           cl.x = -drawW / 2 - 40;
         }
-        const px = cl.x - mouse.nx * cl.parallax;
-        const py = cl.y - mouse.ny * (cl.parallax * 0.45) + Math.sin(tick + cl.bobPhase) * 5;
+        const py = cl.y + Math.sin(tick + cl.bobPhase) * 5;
         ctx.save();
         ctx.globalAlpha = cl.alpha;
-        ctx.drawImage(cl.sprite, px - drawW / 2, py - drawH / 2, drawW, drawH);
+        ctx.drawImage(cl.sprite, cl.x - drawW / 2, py - drawH / 2, drawW, drawH);
         ctx.restore();
       }
 
-      // 2. Silky blurred cloud-mist ribbon trailing the cursor
-      for (let i = cloudTrail.length - 1; i >= 0; i--) {
-        const pf = cloudTrail[i];
-        pf.x += pf.vx;
-        pf.y += pf.vy;
-        pf.vx *= 0.95;
-        pf.vy *= 0.96;
-        pf.size += pf.grow;
-        pf.alpha -= pf.fade;
-        if (pf.alpha <= 0.01) {
-          cloudTrail.splice(i, 1);
-          continue;
-        }
-        ctx.save();
-        ctx.globalAlpha = pf.alpha;
-        ctx.drawImage(pf.sprite, pf.x - pf.size / 2, pf.y - pf.size / 2, pf.size, pf.size * 0.84);
-        ctx.restore();
-      }
-
-      // Soft warm cloud halo directly beneath smoothed cursor
-      if (mouse.active) {
-        ctx.save();
-        ctx.globalAlpha = 0.48;
-        ctx.drawImage(trailSpriteWhite, mouse.smoothX - 78, mouse.smoothY - 68, 156, 136);
-        ctx.restore();
-      }
-
-      // 3. Expanding water/air ripples
-      for (let i = ripples.length - 1; i >= 0; i--) {
-        const rp = ripples[i];
-        rp.r += rp.speed;
-        const progress = rp.r / rp.maxR;
-        const a = rp.alpha * (1 - progress);
-        if (progress >= 1 || a <= 0.01) {
-          ripples.splice(i, 1);
-          continue;
-        }
-        ctx.save();
-        ctx.globalAlpha = a;
-        ctx.strokeStyle = rp.tint;
-        ctx.lineWidth = Math.max(1, 2.4 * (1 - progress));
-        ctx.beginPath();
-        ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // 4. Drifting 5-color petals & musical notes gently swept by cursor cloud wake
       for (const p of petals) {
-        if (mouse.active) {
-          const dx = p.x - mouse.smoothX;
-          const dy = p.y - mouse.smoothY;
-          const dist = Math.hypot(dx, dy);
-          if (dist > 1 && dist < 130) {
-            const push = (1 - dist / 130) * 0.48;
-            p.vx += (dx / dist) * push;
-            p.vy += (dy / dist) * push;
-          }
-        }
-        p.vx = p.vx * 0.985 + 0.004;
-        p.vy = p.vy * 0.985 + 0.007;
         p.x += p.vx + Math.sin(p.angle) * 0.25;
         p.y += p.vy;
         p.angle += p.spin;
 
-        if (p.y > height + 20) { p.y = -16; p.x = Math.random() * width; p.vy = 0.22 + Math.random() * 0.34; }
+        if (p.y > height + 20) { p.y = -16; p.x = Math.random() * width; }
         if (p.x > width + 20) p.x = -16;
         if (p.x < -20) p.x = width + 16;
 
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.angle);
-        ctx.globalAlpha = 0.78;
+        ctx.globalAlpha = 0.72;
         ctx.fillStyle = p.color;
         if (p.note) {
           ctx.font = `700 ${Math.round(p.size * 2.1)}px "Plus Jakarta Sans", sans-serif`;
@@ -576,25 +383,6 @@ document.addEventListener('DOMContentLoaded', () => {
           ctx.ellipse(0, 0, p.size, p.size * 0.58, 0, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.restore();
-      }
-
-      // 5. Click burst notes/petals
-      for (let i = bursts.length - 1; i >= 0; i--) {
-        const b = bursts[i];
-        b.x += b.vx;
-        b.y += b.vy;
-        b.vy += 0.03;
-        b.alpha -= 0.02;
-        if (b.alpha <= 0) {
-          bursts.splice(i, 1);
-          continue;
-        }
-        ctx.save();
-        ctx.globalAlpha = b.alpha;
-        ctx.fillStyle = b.color;
-        ctx.font = `700 ${Math.round(b.size * 2.4)}px "Plus Jakarta Sans", sans-serif`;
-        ctx.fillText(b.symbol, b.x, b.y);
         ctx.restore();
       }
 
